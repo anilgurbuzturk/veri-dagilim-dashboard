@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "locale": "en_US",
+  "platform": "4.4.3",
+  "metadata": {
+    "appmode": "shiny",
+    "primary_rmd": null,
+    "primary_html": null,
+    "content_category": null,
+    "has_parameters": false
+  },
+  "environment": {
+    "r": {
+      "requires": "~=4.4.0"
+    }
+  },
+  "packages": {
+    "renv": {
+      "Source": "CRAN",
+      "Repository": "https://packagemanager.posit.co/cran/latest",
+      "description": {
+        "Package": "renv",
+        "Type": "Package",
+        "Title": "Project Environments",
+        "Version": "1.1.2",
+        "Authors@R": "c(\n    person(\"Kevin\", \"Ushey\", role = c(\"aut\", \"cre\"), email = \"kevin@rstudio.com\",\n           comment = c(ORCID = \"0000-0003-2880-7407\")),\n    person(\"Hadley\", \"Wickham\", role = c(\"aut\"), email = \"hadley@rstudio.com\",\n           comment = c(ORCID = \"0000-0003-4757-117X\")),\n    person(\"Posit Software, PBC\", role = c(\"cph\", \"fnd\"))\n    )",
+        "Description": "A dependency management toolkit for R. Using 'renv', you can create\n    and manage project-local R libraries, save the state of these libraries to\n    a 'lockfile', and later restore your library as required. Together, these\n    tools can help make your projects more isolated, portable, and reproducible.",
+        "License": "MIT + file LICENSE",
+        "URL": "https://rstudio.github.io/renv/, https://github.com/rstudio/renv",
+        "BugReports": "https://github.com/rstudio/renv/issues",
+        "Imports": "utils",
+        "Suggests": "BiocManager, cli, compiler, covr, cpp11, devtools, gitcreds,\njsonlite, jsonvalidate, knitr, miniUI, modules, packrat, pak,\nR6, remotes, reticulate, rmarkdown, rstudioapi, shiny,\ntestthat, uuid, waldo, yaml, webfakes",
+        "Encoding": "UTF-8",
+        "RoxygenNote": "7.3.2",
+        "VignetteBuilder": "knitr",
+        "Config/Needs/website": "tidyverse/tidytemplate",
+        "Config/testthat/edition": "3",
+        "Config/testthat/parallel": "true",
+        "Config/testthat/start-first": "bioconductor,python,install,restore,snapshot,retrieve,remotes",
+        "NeedsCompilation": "no",
+        "Packaged": "2025-03-02 23:50:06 UTC; kevin",
+        "Author": "Kevin Ushey [aut, cre] (<https://orcid.org/0000-0003-2880-7407>),\n  Hadley Wickham [aut] (<https://orcid.org/0000-0003-4757-117X>),\n  Posit Software, PBC [cph, fnd]",
+        "Maintainer": "Kevin Ushey <kevin@rstudio.com>",
+        "Repository": "CRAN",
+        "Date/Publication": "2025-03-03 00:30:02 UTC",
+        "Built": "R 4.4.3; ; 2025-03-09 01:41:43 UTC; windows"
+      }
+    }
+  },
+  "files": {
+    ".Rprofile": {
+      "checksum": "1854e20126cb8fbe144bf12f3d39a3fe"
+    },
+    "app.R": {
+      "checksum": "dba6d02c60536bf7cc0bec2bbf320cd8"
+    },
+    "data/.gitkeep": {
+      "checksum": "8bbca6ef723e7b9ebe8b9796041c136f"
+    },
+    "R/helpers.R": {
+      "checksum": "e1a0ffbe92e6fb0f4cd56658f0e6003a"
+    },
+    "renv.lock": {
+      "checksum": "7af4897a254cd3fa174b685b73e282bb"
+    },
+    "setup.R": {
+      "checksum": "239b550380754eb6b726a25f2a10cfbd"
+    },
+    "www/.gitkeep": {
+      "checksum": "61f839bc40f4877b109d0021f373ac6d"
+    }
+  },
+  "users": null
+}
