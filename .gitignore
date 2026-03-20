@@ -1,4 +1,23 @@
-.Rproj.user
+# R
 .Rhistory
+.Rdata
 .RData
 .Ruserdata
+.Rproj.user/
+
+# renv
+renv/library/
+renv/staging/
+renv/python/
+renv/sandbox/
+
+# Shiny
+rsconnect/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+*.swp
+*~
