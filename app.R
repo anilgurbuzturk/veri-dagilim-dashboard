@@ -20,15 +20,20 @@ source("R/helpers.R")
 # ── UI ────────────────────────────────────────────────────────
 ui <- page_sidebar(
   title = "Veri Dağılım Dashboard'u",
+  fillable = FALSE,
   theme = bs_theme(version = 5, bootswatch = "flatly",
                    base_font = font_google("Inter")),
-
+  
   tags$head(tags$style(HTML("
     .bslib-value-box { min-height: 120px !important; }
     .bslib-value-box .value-box-value { font-size: 2rem !important; }
     .bslib-value-box .value-box-title { font-size: 0.9rem !important; }
+    .tab-pane { overflow-y: auto !important; max-height: none !important; }
+    .tab-pane .card { min-height: fit-content !important; overflow: visible !important; }
+    .tab-pane .card .card-body { overflow: visible !important; }
+    .reactable { min-height: 0 !important; }
   "))),
-
+  
   sidebar = sidebar(
     width = 300,
     fileInput("file", "Excel Dosyası Yükle", accept = c(".xlsx", ".xls")),
@@ -45,55 +50,55 @@ ui <- page_sidebar(
     downloadButton("download_clean", "Temiz Veriyi İndir (.xlsx)",
                    class = "btn-success w-100")
   ),
-
+  
   layout_columns(
     col_widths = c(12),
     navset_card_tab(
       title = "Analiz Paneli",
-
+      
       # ── Özet ──
       nav_panel("Özet",
-        layout_columns(
-          col_widths = c(4, 4, 4),
-          value_box("Satır Sayısı", textOutput("n_rows"),
-                    showcase = icon("table-list"), theme = "primary"),
-          value_box("Sütun Sayısı", textOutput("n_cols"),
-                    showcase = icon("table-columns"), theme = "info"),
-          value_box("Eksik Değer (%)", textOutput("pct_na"),
-                    showcase = icon("circle-exclamation"), theme = "warning")
-        ),
-        card(card_header("Temizleme Raporu"),
-             verbatimTextOutput("clean_log"))
+                layout_columns(
+                  col_widths = c(4, 4, 4),
+                  value_box("Satır Sayısı", textOutput("n_rows"),
+                            showcase = icon("table-list"), theme = "primary"),
+                  value_box("Sütun Sayısı", textOutput("n_cols"),
+                            showcase = icon("table-columns"), theme = "info"),
+                  value_box("Eksik Değer (%)", textOutput("pct_na"),
+                            showcase = icon("circle-exclamation"), theme = "warning")
+                ),
+                card(card_header("Temizleme Raporu"),
+                     verbatimTextOutput("clean_log"))
       ),
-
+      
       # ── Çapraz Tablo ──
       nav_panel("Çapraz Tablo",
-        uiOutput("xtab_ui")
+                uiOutput("xtab_ui")
       ),
-
+      
       # ── Detaylı İstatistik ──
       nav_panel("Detaylı İstatistik",
-        uiOutput("stats_ui")
+                uiOutput("stats_ui")
       ),
-
+      
       # ── Görseller ──
       nav_panel("Görseller",
-        uiOutput("visuals_ui")
+                uiOutput("visuals_ui")
       ),
-
+      
       # ── Veri Tablosu ──
       nav_panel("Veri Tablosu",
-        card(
-          full_screen = TRUE,
-          card_header(
-            class = "py-1",
-            span("İnteraktif Tablo", class = "fw-bold"),
-            span(HTML("&mdash; sağ alttaki "), icon("expand"),
-                 " ile tam ekran yapabilirsiniz",
-                 class = "text-muted small ms-2")
-          ),
-          reactableOutput("data_table")
-        )
+                card(
+                  full_screen = TRUE,
+                  card_header(
+                    class = "py-1",
+                    span("İnteraktif Tablo", class = "fw-bold"),
+                    span(HTML("&mdash; sağ alttaki "), icon("expand"),
+                         " ile tam ekran yapabilirsiniz",
+                         class = "text-muted small ms-2")
+                  ),
+                  reactableOutput("data_table")
+                )
       )
     )
   )
@@ -101,90 +106,90 @@ ui <- page_sidebar(
 
 # ── SERVER ────────────────────────────────────────────────────
 server <- function(input, output, session) {
-
+  
   # ---- Sabitler ----
   NONE <- NONE_LABEL
-
+  
   # ---- Veri okuma & temizleme ----
   sheets <- reactive({ req(input$file); excel_sheets(input$file$datapath) })
-
+  
   raw_data <- reactive({
     req(input$file)
     read_excel(input$file$datapath, sheet = input$sheet %||% 1)
   })
-
+  
   clean_data <- reactive({
     req(input$file)
     clean_excel(input$file$datapath, sheet = input$sheet %||% 1)
   })
-
+  
   # ---- Yardımcı: seçilen değer "Seçilmedi" mi? ----
   sel <- function(val) { !is.null(val) && val != NONE }
-
+  
   # aktif ağırlık
   active_wt <- reactive({ if (sel(input$wt_var)) input$wt_var else NULL })
-
+  
   # ---- Dinamik UI ----
   output$sheet_ui <- renderUI({
     req(sheets())
     selectInput("sheet", "Sayfa", choices = sheets())
   })
-
+  
   cat_vars <- reactive(clean_data() |> select(where(~ is.character(.) | is.factor(.))) |> names())
   num_vars <- reactive(clean_data() |> select(where(is.numeric)) |> names())
-
+  
   output$num_var_ui <- renderUI({
     req(length(num_vars()) > 0)
     selectInput("num_var", "Sayısal Değişken", choices = num_vars())
   })
-
+  
   output$wt_var_ui <- renderUI({
     choices <- c(NONE, num_vars())
     selectInput("wt_var", "Ağırlık Değişkeni (opsiyonel)", choices = choices, selected = NONE)
   })
-
+  
   output$row_var_ui <- renderUI({
     choices <- c(NONE, cat_vars())
     selectInput("row_var", "Satır Değişkeni", choices = choices, selected = NONE)
   })
-
+  
   output$col_var_ui <- renderUI({
     choices <- c(NONE, cat_vars())
     default <- if (length(cat_vars()) > 1) cat_vars()[2] else NONE
     selectInput("col_var", "Sütun Değişkeni", choices = choices, selected = default)
   })
-
+  
   # ---- Özet kutular ----
   output$n_rows <- renderText(nrow(clean_data()))
   output$n_cols <- renderText(ncol(clean_data()))
   output$pct_na <- renderText(sprintf("%.1f%%", mean(is.na(clean_data())) * 100))
   output$clean_log <- renderPrint(cat(cleaning_report(raw_data(), clean_data())))
-
+  
   # ---- Reactable stil ----
   xtab_style <- function(df) {
     first_col <- names(df)[1]
     reactable(df,
-      compact = TRUE, bordered = TRUE, striped = TRUE,
-      sortable = TRUE, resizable = TRUE,
-      defaultColDef = colDef(
-        align = "center",
-        headerStyle = list(fontWeight = "bold", background = "#f0f4f8", fontSize = "0.85rem")
-      ),
-      columns = stats::setNames(
-        list(colDef(align = "left",
-          style = function(value) {
-            if (identical(as.character(value), "TOPLAM"))
-              list(fontWeight = "bold", background = "#e8f0fe")
-            else list(fontWeight = "bold")
-          }
-        )), first_col
-      ),
-      rowStyle = function(index) {
-        if (index == nrow(df)) list(fontWeight = "bold", background = "#e8f0fe")
-      }
+              compact = TRUE, bordered = TRUE, striped = TRUE,
+              sortable = TRUE, resizable = TRUE,
+              defaultColDef = colDef(
+                align = "center",
+                headerStyle = list(fontWeight = "bold", background = "#f0f4f8", fontSize = "0.85rem")
+              ),
+              columns = stats::setNames(
+                list(colDef(align = "left",
+                            style = function(value) {
+                              if (identical(as.character(value), "TOPLAM"))
+                                list(fontWeight = "bold", background = "#e8f0fe")
+                              else list(fontWeight = "bold")
+                            }
+                )), first_col
+              ),
+              rowStyle = function(index) {
+                if (index == nrow(df)) list(fontWeight = "bold", background = "#e8f0fe")
+              }
     )
   }
-
+  
   # ============================================================
   # ÇAPRAZ TABLO SEKMESİ
   # ============================================================
@@ -208,17 +213,17 @@ server <- function(input, output, session) {
       )
     }
   })
-
+  
   output$xtab_count <- renderReactable({
     req(sel(input$row_var), sel(input$col_var))
     crosstab_count(clean_data(), input$row_var, input$col_var, active_wt()) |> xtab_style()
   })
-
+  
   output$xtab_pct <- renderReactable({
     req(sel(input$row_var), sel(input$col_var))
     crosstab_pct(clean_data(), input$row_var, input$col_var, active_wt()) |> xtab_style()
   })
-
+  
   # ============================================================
   # DETAYLI İSTATİSTİK SEKMESİ
   # ============================================================
@@ -227,7 +232,7 @@ server <- function(input, output, session) {
     has_row <- sel(input$row_var)
     has_col <- sel(input$col_var)
     wt_label <- if (sel(input$wt_var)) paste0(" (ağırlık: ", input$wt_var, ")") else ""
-
+    
     if (!has_row && !has_col) {
       # ── Grupsuz: basit istatistik ──
       card(
@@ -260,7 +265,7 @@ server <- function(input, output, session) {
       )
     }
   })
-
+  
   # Basit istatistik
   output$stat_simple <- renderReactable({
     req(input$num_var)
@@ -268,13 +273,13 @@ server <- function(input, output, session) {
       reactable(compact = TRUE, bordered = TRUE, striped = TRUE, fullWidth = FALSE,
                 columns = list(Deger = colDef(align = "right")))
   })
-
+  
   # Tek boyutlu gruplu
   output$stat_grouped <- renderReactable({
     req(input$num_var, sel(input$row_var))
     grouped_stats(clean_data(), input$num_var, input$row_var, active_wt()) |> xtab_style()
   })
-
+  
   # Çapraz istatistikler
   output$stat_mean <- renderReactable({
     req(input$num_var, sel(input$row_var), sel(input$col_var))
@@ -301,7 +306,7 @@ server <- function(input, output, session) {
     crosstab_stat(clean_data(), input$row_var, input$col_var,
                   input$num_var, function(x, w) max(x, na.rm = TRUE), active_wt()) |> xtab_style()
   })
-
+  
   # ============================================================
   # GÖRSELLER SEKMESİ
   # ============================================================
@@ -323,7 +328,7 @@ server <- function(input, output, session) {
       )
     }
   })
-
+  
   output$heatmap_plot <- renderPlotly({
     req(sel(input$row_var), sel(input$col_var))
     ggplotly(build_heatmap(clean_data(), input$row_var, input$col_var))
@@ -332,24 +337,24 @@ server <- function(input, output, session) {
     req(sel(input$row_var), sel(input$col_var))
     ggplotly(build_stacked_pct_bar(clean_data(), input$row_var, input$col_var))
   })
-
+  
   # ============================================================
   # VERİ TABLOSU
   # ============================================================
   output$data_table <- renderReactable({
     reactable(clean_data(),
-      searchable = TRUE, filterable = TRUE, sortable = TRUE,
-      resizable = TRUE, compact = TRUE, bordered = TRUE,
-      striped = TRUE, highlight = TRUE,
-      defaultPageSize = 25, paginationType = "jump",
-      style = list(fontSize = "0.82rem"),
-      defaultColDef = colDef(
-        headerStyle = list(fontSize = "0.78rem", fontWeight = "bold", padding = "4px 8px"),
-        style = list(padding = "2px 8px")
-      )
+              searchable = TRUE, filterable = TRUE, sortable = TRUE,
+              resizable = TRUE, compact = TRUE, bordered = TRUE,
+              striped = TRUE, highlight = TRUE,
+              defaultPageSize = 25, paginationType = "jump",
+              style = list(fontSize = "0.82rem"),
+              defaultColDef = colDef(
+                headerStyle = list(fontSize = "0.78rem", fontWeight = "bold", padding = "4px 8px"),
+                style = list(padding = "2px 8px")
+              )
     )
   })
-
+  
   # ============================================================
   # EXPORT
   # ============================================================
