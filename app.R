@@ -11,6 +11,7 @@ library(janitor)
 library(ggplot2)
 library(plotly)
 library(reactable)
+library(DT)
 library(writexl)
 library(tidyr)
 library(scales)
@@ -91,13 +92,19 @@ ui <- page_sidebar(
                 card(
                   full_screen = TRUE,
                   card_header(
-                    class = "py-1",
-                    span("İnteraktif Tablo", class = "fw-bold"),
-                    span(HTML("&mdash; sağ alttaki "), icon("expand"),
-                         " ile tam ekran yapabilirsiniz",
-                         class = "text-muted small ms-2")
+                    class = "py-2 d-flex justify-content-between align-items-center",
+                    span("Veri Tablosu", class = "fw-bold"),
+                    div(
+                      downloadButton("download_edited", "Düzenlenmiş Veriyi İndir",
+                                     class = "btn-warning btn-sm me-2"),
+                      actionButton("reset_edits", "Düzenlemeleri Sıfırla",
+                                   class = "btn-outline-secondary btn-sm")
+                    )
                   ),
-                  reactableOutput("data_table")
+                  div(class = "small text-muted mb-2",
+                      icon("pencil", class = "me-1"),
+                      "Herhangi bir hücreye çift tıklayarak değeri düzenleyebilirsiniz."),
+                  DT::dataTableOutput("data_table")
                 )
       )
     )
@@ -339,20 +346,52 @@ server <- function(input, output, session) {
   })
   
   # ============================================================
-  # VERİ TABLOSU
+  # VERİ TABLOSU (düzenlenebilir)
   # ============================================================
-  output$data_table <- renderReactable({
-    reactable(clean_data(),
-              searchable = TRUE, filterable = TRUE, sortable = TRUE,
-              resizable = TRUE, compact = TRUE, bordered = TRUE,
-              striped = TRUE, highlight = TRUE,
-              defaultPageSize = 25, paginationType = "jump",
-              style = list(fontSize = "0.82rem"),
-              defaultColDef = colDef(
-                headerStyle = list(fontSize = "0.78rem", fontWeight = "bold", padding = "4px 8px"),
-                style = list(padding = "2px 8px")
-              )
+  edited_data <- reactiveVal(NULL)
+  
+  observe({ edited_data(clean_data()) })
+  
+  output$data_table <- DT::renderDataTable({
+    DT::datatable(
+      edited_data(),
+      editable = TRUE,
+      filter   = "top",
+      rownames = FALSE,
+      options  = list(
+        pageLength   = 25,
+        scrollX      = TRUE,
+        autoWidth    = TRUE,
+        language     = list(
+          search       = "Ara:",
+          lengthMenu   = "_MENU_ satır göster",
+          info         = "_TOTAL_ satırdan _START_ - _END_ arası",
+          paginate     = list(`previous` = "Önceki", `next` = "Sonraki"),
+          zeroRecords  = "Kayıt bulunamadı",
+          emptyTable   = "Tabloda veri yok"
+        )
+      )
     )
+  })
+  
+  # Hücre düzenlendiğinde reactiveVal güncelle
+  observeEvent(input$data_table_cell_edit, {
+    info <- input$data_table_cell_edit
+    df   <- edited_data()
+    row  <- info$row
+    col  <- info$col + 1  # DT 0-indexed col, R 1-indexed
+    val  <- info$value
+    # Sütun tipi sayısalsa numeric'e çevir
+    if (is.numeric(df[[col]])) {
+      val <- suppressWarnings(as.numeric(val))
+    }
+    df[row, col] <- val
+    edited_data(df)
+  })
+  
+  # Düzenlemeleri sıfırla
+  observeEvent(input$reset_edits, {
+    edited_data(clean_data())
   })
   
   # ============================================================
@@ -361,6 +400,11 @@ server <- function(input, output, session) {
   output$download_clean <- downloadHandler(
     filename = function() paste0("temiz_veri_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".xlsx"),
     content  = function(file) write_xlsx(clean_data(), file)
+  )
+  
+  output$download_edited <- downloadHandler(
+    filename = function() paste0("duzenlenmis_veri_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".xlsx"),
+    content  = function(file) write_xlsx(edited_data(), file)
   )
 }
 
